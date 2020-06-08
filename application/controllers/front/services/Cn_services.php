@@ -1,0 +1,271 @@
+<?php
+
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Cn_services extends CI_Controller {
+
+    function __construct() {
+        parent::__construct(); //It calls the Parent constructor
+    }
+
+    public function services() {
+    
+    /*Start:: get city*/
+    $this->db->select('pk_id,state');
+    $this->db->from('master_state');
+    $this->db->where('status','1');
+    $this->db->order_by('state','asc');
+    $statelist=$this->db->get()->result_array();
+
+    $finalarrayview=array();
+
+    if(!empty($statelist)){
+    foreach($statelist as $row){
+
+        $this->db->select('city,pk_id');
+        $this->db->from('master_city');
+        $this->db->where('state',$row['pk_id']); 
+        $this->db->where('status',1);
+        $this->db->order_by('state','asc'); 
+        $citydata = $this->db->get()->result_array();
+
+        $row['cityarray'] = $citydata;
+        $finalarrayview[]=$row;
+        }
+     }
+    $data['citylist']=$finalarrayview;
+    /*End:: get city*/
+//Post data 
+    $post_city_id=!empty($this->input->get('cityid')) ? $this->input->get('cityid') : '';
+    
+    $post_language_id=!empty($this->input->get('language')) ? $this->input->get('language') : '';
+
+    if (empty($post_city_id)) {
+
+     
+    $city_id= $this->city_empty_check($data['citylist']);
+    }else{
+      $city_id=$post_city_id;  
+    }
+
+  /*Start:: get languagelist*/
+    $this->db->select('language,ml.pk_id,fk_city');
+    $this->db->from('master_citywise_language as cl');
+    $this->db->join('master_language as ml','ml.pk_id=cl.fk_language','left');
+    $this->db->where('cl.status','1');
+    $this->db->where('fk_city',$city_id);
+    $this->db->order_by('cl.pk_id','ASC');
+    $data['languagelist']=$this->db->get()->result_array();
+     /*End:: get languagelist*/
+ 
+// echo "<pre>";print_r($data['languagelist']);die();
+    if (empty($post_language_id)) {
+
+    $language_id=$this->language_check($data['languagelist']);
+    }else{
+      $language_id=$post_language_id;  
+    }
+
+    /*Start:: get Categoty list*/
+    $this->db->select('category,fk_language,pk_id');
+    $this->db->from('master_category as c');
+    $this->db->where('c.status','1');
+    $this->db->where('fk_language',$language_id);
+    $this->db->order_by('c.pk_id','ASC');
+    $cat_list=$this->db->get()->result_array();
+     /*End:: get Categoty list*/
+
+
+    $finalarray_pooja_list=array();
+
+    if(!empty($cat_list)){
+    foreach($cat_list as $row){
+        $category_id=!empty($row['pk_id'])? $row['pk_id']:'';
+        $fk_language=!empty($row['fk_language'])? $row['fk_language']:'';
+
+        $this->db->select('pooja_name,pk_id,pooja_image');
+        $this->db->from('pooja');
+        $this->db->where('fk_category',$category_id); 
+        $this->db->where('fk_language',$fk_language); 
+        $this->db->where('status',1);
+        $this->db->order_by('pk_id','ASC'); 
+        $pooja_data = $this->db->get()->result_array();
+
+        $row['pooja_list_array'] = $pooja_data;
+        $row['city_id'] = $city_id;
+        
+
+        $finalarray_pooja_list[]=$row;
+        }
+     }
+    $data['cat_listing']=$finalarray_pooja_list;
+
+
+    $data['post_city_id']=$post_city_id;
+    $data['post_language_id']=$post_language_id;
+// echo "<pre>";print_r($data['cat_listing']);die();
+       $this->load->view('front/services/vw_services',$data);
+    }
+
+  public function city_empty_check($data)
+    {   
+        
+          if (!empty($data)) {
+
+         foreach ($data as $key => $value) {
+
+   
+            if(!empty($value['cityarray'][0]['city']) && $value['cityarray'][0]['city']=='Hyderabad'){
+
+                $city_id=!empty($value['cityarray'][0]['pk_id'])?$value['cityarray'][0]['pk_id']:'';
+                return $city_id;
+            }
+            }
+        }
+    }
+      public function language_check($data)
+    {   
+        
+          if (!empty($data)) {
+
+         foreach ($data as $key => $value) {
+
+  
+            if(!empty($value['language']) && $value['language']=='Telugu'){
+
+                $language_id=!empty($value['pk_id'])?$value['pk_id']:'';
+                // print_r($language_id);die();
+                return $language_id;
+            }
+            }
+        }
+    }
+
+   public function get_cat_puja_list()
+    {
+     $language_id=!empty($this->input->get('language')) ? $this->input->get('language') : '';   
+     $category_id=!empty($this->input->get('catid')) ? $this->input->get('catid') : '';   
+
+
+        $this->db->select('pooja_name,pk_id,pooja_image');
+        $this->db->from('pooja');
+        $this->db->where('fk_category',$category_id); 
+        $this->db->where('fk_language',$language_id); 
+        $this->db->where('status',1);
+        $this->db->order_by('pooja_name','ASC'); 
+        $pooja_data = $this->db->get()->result_array();
+
+    echo json_encode($pooja_data);
+
+    }
+
+      public function view_services($pooja_id) {
+      
+        /*Start:: get pooja view data*/
+    $this->db->select('pk_id,pooja_name,short_description,long_description,silent_feature,pooja_image,fk_language,fk_category');
+    $this->db->from('pooja');
+    $this->db->where('status','1');
+    $this->db->where('pk_id',$pooja_id);
+     $data['pooja_view_data']=$this->db->get()->result_array();
+
+     // echo "<pre>";print_r($data['pooja_view_data']);die();
+/*End:: get pooja view data*/
+    $fk_language_id = !empty($data['pooja_view_data'][0]['fk_language'])?$data['pooja_view_data'][0]['fk_language']:'';
+    $fk_category_id = !empty($data['pooja_view_data'][0]['fk_category'])?$data['pooja_view_data'][0]['fk_category']:'';
+
+    $this->db->select('pooja_name,pk_id,pooja_image');
+    $this->db->from('pooja');
+    $this->db->where('fk_language',$fk_language_id); 
+    $this->db->where('fk_category',$fk_category_id); 
+    $this->db->where('status',1);
+    $this->db->where('pk_id!=',$pooja_id);
+    $this->db->order_by('pk_id','desc'); 
+    $this->db->limit(2); 
+    $data['related_pooja_list']= $this->db->get()->result_array();
+
+    /*STart::pooja rating list*/
+
+ //start:: pagination::- 
+        $params = array();
+        $params['links'] = array();
+        $params['results'] = array();
+        $limit_per_page =2;
+        $page = ($this->uri->segment(4)) ?($this->uri->segment(4) -1) : 0;
+        // print_r($page);die();
+        $total_records = "";
+        $this->db->select('comment,rating,first_name,middle_name,last_name,upload_profile_Image,customer_name,A.created_date');  
+        $this->db->from('customer_rating as A');
+        $this->db->join('registered_purohit as B','B.pk_id=A.fk_prurohit_id');
+        $this->db->join('customer_registration as C','C.pk_id=A.fk_customer_id');
+        $this->db->where('fk_puja_id',$pooja_id);  
+        $this->db->where('A.status',1);
+        $this->db->order_by('A.pk_id','desc'); 
+    
+        $puja_rating_list_data= $this->db->get()->result_array();
+        $total_records=!empty($puja_rating_list_data) ? count($puja_rating_list_data) : '0';
+// print_r($total_records);die();
+        $data['totalcount']=!empty($total_records) ? $total_records : '0';
+        if ($total_records > 0){
+        $this->db->limit($limit_per_page,$page * $limit_per_page);
+        $this->db->select('comment,rating,first_name,middle_name,last_name,upload_profile_Image,customer_name,A.created_date');
+        $this->db->from('customer_rating as A');
+        $this->db->join('registered_purohit as B','B.pk_id=A.fk_prurohit_id');
+        $this->db->join('customer_registration as C','C.pk_id=A.fk_customer_id');
+        $this->db->where('fk_puja_id',$pooja_id);  
+        $this->db->where('A.status',1);
+        $this->db->order_by('A.pk_id','desc'); 
+    
+        $puja_rating_list_data= $this->db->get()->result_array();
+
+
+            $params["results"] = $puja_rating_list_data;             
+
+            // $redirect=$this->input->get('redirect');
+          
+            $config['base_url'] = base_url() . 'front-services-view/'.$pooja_id.'/reviews/';
+            $config['total_rows'] = $total_records;
+            $config['per_page'] = $limit_per_page;
+            $config["uri_segment"] = 4;
+            $config['num_links'] = 2;
+            $config['use_page_numbers'] = TRUE;
+            $config['reuse_query_string'] = TRUE;
+            $config['num_tag_open'] = '<li>';
+            $config['num_tag_close'] = '</li>';
+            $config['cur_tag_open'] = '<li class="active"><a href="javascript:void(0);">';
+            $config['cur_tag_close'] = '</a></li>';
+            $config['next_link'] = 'Next';
+            $config['prev_link'] = 'Prev';
+            $config['next_tag_open'] = '<li class="pg-next">';
+            $config['next_tag_close'] = '</li>';
+            $config['prev_tag_open'] = '<li class="pg-prev">';
+            $config['prev_tag_close'] = '</li>';
+            $config['first_tag_open'] = '<li>';
+            $config['first_tag_close'] = '</li>';
+            $config['last_tag_open'] = '<li>';
+            $config['last_tag_close'] = '</li>';
+            $this->pagination->initialize($config);
+            $params["links"] = $this->pagination->create_links();
+        }        
+        $data['follow_links']=$params['links'];
+        $data['puja_rating_list']= $params["results"] ;
+        //End:: pagination::- 
+        $data['totalcount']=$total_records;
+
+    /*End::pooja rating list*/
+        $this->db->select('sum(rating) as sumofrating,count(pk_id) as countrating');
+        $this->db->from('customer_rating as A');
+        $this->db->where('fk_puja_id',$pooja_id);  
+        $this->db->where('A.status',1);
+        $rating_data= $this->db->get()->result_array();
+// echo "<pre>"; print_r($rating_data);die();
+             if (!empty($rating_data[0]['sumofrating'])) {
+
+                $ratings = (!empty($rating_data[0]['sumofrating']) ? $rating_data[0]['sumofrating'] : '0') / ((!empty($rating_data[0]['countrating']) ? $rating_data[0]['countrating'] : '0'));
+            }
+        $data['pooja_total_rating']=!empty($ratings)?$ratings:'';
+
+       $this->load->view('front/services/vw_view_services',$data);
+    }
+
+  
+}

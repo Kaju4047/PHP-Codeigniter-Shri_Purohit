@@ -1,0 +1,108 @@
+<?php include('application/views/front/section/header.php'); 
+
+?>  
+
+    <div class="site-section bg-light">
+      <div class="container">
+        <div class="row">
+
+
+
+
+        <div class="col-lg-3"> <!-- required for floating -->
+          <!-- Nav tabs -->
+          <ul class="nav nav-tabs tabs-left sideways sidebar">
+            <li><a href="<?php echo base_url();?>front-customer-profile" >My Profile</a></li>
+            <li class="active"><a href="<?php echo base_url();?>front-my-booking">My Bookings</a></li>
+            <li><a href="<?php echo base_url();?>front-my-setting">Settings</a></li>
+            <li><a href="<?php echo base_url();?>front-customer-logout">Log Out</a></li>
+          </ul>
+        </div>
+
+          <div class="col-lg-9">
+            <div class="row">
+              
+
+
+            <div class="col-md-12">
+                <div class="MessageHide">
+                              <?php
+                           
+                           //    if (!empty($this->input->get('success'))) {
+                           // echo base64_decode($this->input->get('success'));
+                           
+                              // }
+                              ?>
+                          </div>
+               
+            <input type="hidden" name="base_url" id="base_url" value="<?php echo base_url(); ?>">
+            <input type="hidden" name="offset" id="offset" value="0">
+            <div id="listing_div"></div>
+              </div>
+
+
+          </div>
+          </div>
+        </div>
+      </div>
+   </div>
+
+    
+    
+    
+<?php include('application/views/front/section/footer.php'); ?>  
+<script type="text/javascript">
+  
+$(window).scroll(function () {
+    if ($(window).scrollTop() + $(window).height() >= $(document).height()) {
+        getlist();
+    }
+});
+
+$(document).ready(function(){
+  getlist();
+});
+/*[start]:: get queries*/
+
+function getlist(){
+    
+      var offset = $("#offset").val();
+      var base_url = $("#base_url").val();
+      
+      $.ajax({
+        url: base_url + 'get-booking-listing',
+        data: {offset:offset},
+        method: 'POST',
+        dataType: "json",
+        async: false,
+        error: function (request, error) {
+            console.log(request);
+            console.log(error);
+        },
+        success: function (data) {
+           
+           // alert(JSON.stringify(data));
+            if (offset == '0') {
+                             
+                $("#listing_div").html('');
+            }
+            if(data.html!=""){
+
+              $("#listing_div").append(data.html);
+            }
+            else{
+              if (offset == '0') {
+                  $("#listing_div").html('<div class="feed-reply feed-question-box"><h3> No Data Available..!</h3></div>');
+              }
+            }
+            if (data.offset != '') {
+              $("#offset").val(data.offset);
+            }
+
+                 // $('.morecls').bind('click');
+        }
+    });
+}
+</script>
+  </body>
+</html>
